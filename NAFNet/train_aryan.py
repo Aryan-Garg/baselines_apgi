@@ -24,6 +24,8 @@ from dataset_aryan import SPCDataset, SPCDataset_Mosaic
 from accelerate import Accelerator
 from accelerate.utils import set_seed
 from tqdm import tqdm
+import matplotlib.pyplot as plt
+import numpy as np
 
 def parse_options(is_train=True):
     parser = argparse.ArgumentParser()
@@ -147,6 +149,13 @@ def main():
             if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
                 print('Saving models and training states.')
                 model.save(epoch, current_iter)
+
+            if current_iter % opt['logger']['save_img'] == 1:
+                output_dict = model.get_current_visuals()
+                os.makedirs("./experiments/temp", exist_ok=True)
+                plt.imsave("./experiments/temp/gt.png", rearrange(output_dict['gt'].squeeze(), "c h w -> h w c").numpy())
+                plt.imsave("./experiments/temp/lq.png", rearrange(output_dict['lq'].squeeze(), "c h w -> h w c").numpy())
+                plt.imsave("./experiments/temp/result.png", rearrange(output_dict['result'].squeeze(), "c h w -> h w c").numpy())
             
             if current_iter > total_iters:
                 break
