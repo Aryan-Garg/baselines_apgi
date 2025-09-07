@@ -1,7 +1,7 @@
 import yaml
 from collections import OrderedDict
 from os import path as osp
-
+import os
 
 def ordered_yaml():
     """Support OrderedDict for yaml.
@@ -66,11 +66,15 @@ def parse(opt_path, is_train=True):
     if is_train:
         experiments_root = osp.join(opt['path']['root'], 'experiments',
                                     opt['name'])
+        os.makedirs(experiments_root, exist_ok=True)
         opt['path']['experiments_root'] = experiments_root
+        os.makedirs(os.path.join(experiments_root, 'models'), exist_ok=True)
         opt['path']['models'] = osp.join(experiments_root, 'models')
+        os.makedirs(os.path.join(experiments_root, 'training_states'), exist_ok=True)
         opt['path']['training_states'] = osp.join(experiments_root,
                                                   'training_states')
         opt['path']['log'] = experiments_root
+        os.makedirs(os.path.join(experiments_root, 'visualization'), exist_ok=True)
         opt['path']['visualization'] = osp.join(experiments_root,
                                                 'visualization')
 
@@ -82,6 +86,7 @@ def parse(opt_path, is_train=True):
             opt['logger']['save_checkpoint_freq'] = 8
     else:  # test
         results_root = osp.join(opt['path']['root'], 'results', opt['name'])
+        os.makedirs(results_root, exist_ok=True)
         opt['path']['results_root'] = results_root
         opt['path']['log'] = results_root
         opt['path']['visualization'] = osp.join(results_root, 'visualization')
