@@ -15,6 +15,9 @@ Was not finetuned.
 
 ### 3. NAFNet
 
+> CUDA_VISIBLE_DEVICES=15 python3 train_aryan.py -opt options/train/FT_demosaic_width64.yml
+> CUDA_VISIBLE_DEVICES=14 python3 train_aryan.py -opt options/train/FT_mosaic_width64.yml
+
 ### 4. QBP 
 
 ### 5. QUIVER

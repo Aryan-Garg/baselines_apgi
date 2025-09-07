@@ -7,6 +7,7 @@ import time
 import torch
 import os
 from os import path as osp
+import copy
 
 from basicsr.models import create_model
 from basicsr.utils.options import dict2str, parse
@@ -17,11 +18,12 @@ from basicsr.utils import (MessageLogger, check_resume, get_env_info,
                            set_random_seed)
 
 from torch.utils.data import DataLoader
+from einops import rearrange
 from dataset_aryan import SPCDataset, SPCDataset_Mosaic
 
 from accelerate import Accelerator
 from accelerate.utils import set_seed
-
+from tqdm import tqdm
 
 def parse_options(is_train=True):
     parser = argparse.ArgumentParser()
@@ -70,16 +72,15 @@ def parse_options(is_train=True):
     return opt
 
 
-
 def create_train_val_dataloader(opt, logger):
     # create train and val dataloaders
     train_loader, val_loader = None, None
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'train':
-            if opt["mosaic"]:
+            if dataset_opt["simulation_type"] == "mosaic":
                 train_set = SPCDataset_Mosaic(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/combined_dataset.txt", 
                                               out_size=256, crop_type="center", use_hflip=False, bits=3)
-            elif opt["demosaic"]:
+            elif dataset_opt["simulation_type"] == "demosaic":
                 train_set = SPCDataset(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/combined_dataset.txt", 
                                               out_size=256, crop_type="center", use_hflip=False, bits=3)
             else:
@@ -94,15 +95,15 @@ def create_train_val_dataloader(opt, logger):
 
             num_iter_per_epoch = len(train_set) // 2
             total_iters = int(opt['train']['total_iter'])
-            total_epochs = 1
+            total_epochs = 2
             
-            print(f'Training statistics:\n\tNumber of train images: {len(train_set)}\n\tBatch size per gpu: 2\n\tWorld size (gpu number): {opt["world_size"]}\n\tRequire iter number per epoch: {num_iter_per_epoch}\n\tTotal epochs: {total_epochs}; iters: {total_iters}.')
+            print(f'Training statistics:\n\tNumber of train images: {len(train_set)}\n\tBatch size per gpu: 2\n\tWorld size (gpu number): {opt["world_size"]}\n\tRequire iter number per epoch: {num_iter_per_epoch}\n\tTotal epochs: {total_epochs} OR iters: {total_iters}.')
 
         elif phase == 'val':
-            if opt["mosaic"]:
+            if opt["simulation_type"] == "mosaic":
                 val_set = SPCDataset_Mosaic(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/random_val.txt", 
                                               out_size=256, crop_type="center", use_hflip=False, bits=3)
-            elif opt["demosaic"]:
+            elif opt["simulation_type"] == "demosaic":
                 val_set = SPCDataset(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/random_val.txt", 
                                               out_size=256, crop_type="center", use_hflip=False, bits=3)
             else:
@@ -122,21 +123,15 @@ def create_train_val_dataloader(opt, logger):
 
 def main():
     opt = parse_options(is_train=True)
-    ckpt = torch.load("/home/argar/apgi/baselines_apgi/NAFNet/pretrained_weights/NAFNet-SIDD-width64.pth")
     model = create_model(opt)
-    try:
-        model.load_state_dict(ckpt, strict=True)
-    except Exception as e:
-        print(e)
-        print("\n[!] Loading pretrained model with strict=False")
-        model.load_state_dict(ckpt, strict=False)
-        
-    train_loader, total_epochs, total_iters = create_train_val_dataloader(opt, logger=None)
+    train_loader, val_loader, total_epochs, total_iters = create_train_val_dataloader(opt, logger=None)
 
     for epoch in range(total_epochs):
         current_iter = 0
-        for batch in train_loader:
-            gt, lq, prompt, gt_path = batch
+        for batch in tqdm(train_loader):
+            gt, lq, _, _ = batch
+            gt = rearrange(gt, "b h w c -> b c h w").contiguous().float()
+            lq = rearrange(lq, "b h w c -> b c h w").contiguous().float()
 
             current_iter += 1
             if current_iter > total_iters:
@@ -152,6 +147,12 @@ def main():
             if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
                 print('Saving models and training states.')
                 model.save(epoch, current_iter)
+            
+            if current_iter > total_iters:
+                break
+
+        if current_iter > total_iters:
+            break
 
     # end of epoch
 
