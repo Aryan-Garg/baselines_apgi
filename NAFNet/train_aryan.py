@@ -132,8 +132,8 @@ def main():
         current_iter = 0
         for batch in tqdm(train_loader):
             gt, lq, _, _ = batch
-            gt = rearrange(gt, "b h w c -> b c h w").contiguous().float()
-            lq = rearrange(lq, "b h w c -> b c h w").contiguous().float()
+            gt = rearrange((gt+1)/2, "b h w c -> b c h w").contiguous().float()
+            lq = rearrange((lq+1)/2, "b h w c -> b c h w").contiguous().float()
 
             current_iter += 1
             if current_iter > total_iters:
@@ -153,9 +153,11 @@ def main():
             if current_iter % opt['logger']['save_img'] == 1:
                 output_dict = model.get_current_visuals()
                 os.makedirs("./experiments/temp", exist_ok=True)
-                plt.imsave("./experiments/temp/gt.png", rearrange(output_dict['gt'].squeeze(), "c h w -> h w c").numpy())
-                plt.imsave("./experiments/temp/lq.png", rearrange(output_dict['lq'].squeeze(), "c h w -> h w c").numpy())
-                plt.imsave("./experiments/temp/result.png", rearrange(output_dict['result'].squeeze(), "c h w -> h w c").numpy())
+                plt.imsave("./experiments/temp/gt.png", rearrange(output_dict['gt'][0, ...], "c h w -> h w c").numpy())
+                plt.imsave("./experiments/temp/lq.png", rearrange(output_dict['lq'][0, ...], "c h w -> h w c").numpy())
+                res = rearrange(output_dict['result'][0, ...], "c h w -> h w c")
+                res = (res - res.min()) / (res.max() - res.min())
+                plt.imsave("./experiments/temp/result.png", res.numpy())
             
             if current_iter > total_iters:
                 break
