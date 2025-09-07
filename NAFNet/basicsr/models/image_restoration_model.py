@@ -101,10 +101,9 @@ class ImageRestorationModel(BaseModel):
                 f'optimizer {optim_type} is not supperted yet.')
         self.optimizers.append(self.optimizer_g)
 
-    def feed_data(self, data, is_val=False):
-        self.lq = data['lq'].to(self.device)
-        if 'gt' in data:
-            self.gt = data['gt'].to(self.device)
+    def feed_data(self, lq, gt, is_val=False):
+        self.lq = lq.to(self.device)
+        self.gt = gt.to(self.device)
 
     def grids(self):
         b, c, h, w = self.gt.size()
@@ -186,7 +185,7 @@ class ImageRestorationModel(BaseModel):
         self.output = (preds / count_mt).to(self.device)
         self.lq = self.origin_lq
 
-    def optimize_parameters(self, current_iter, tb_logger):
+    def optimize_parameters(self, current_iter, tb_logger=None):
         self.optimizer_g.zero_grad()
 
         if self.opt['train'].get('mixup', False):

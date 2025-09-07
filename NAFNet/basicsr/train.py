@@ -75,8 +75,7 @@ def parse_options(is_train=True):
 def init_loggers(opt):
     log_file = osp.join(opt['path']['log'],
                         f"train_{opt['name']}_{get_time_str()}.log")
-    logger = get_root_logger(
-        logger_name='basicsr', log_level=logging.INFO, log_file=log_file)
+    logger = get_root_logger(logger_name='basicsr', log_level=logging.INFO, log_file=log_file)
     logger.info(get_env_info())
     logger.info(dict2str(opt))
 
@@ -177,8 +176,7 @@ def main():
     # mkdir for experiments and logger
     if resume_state is None:
         make_exp_dirs(opt)
-        if opt['logger'].get('use_tb_logger') and 'debug' not in opt[
-                'name'] and opt['rank'] == 0:
+        if opt['logger'].get('use_tb_logger') and 'debug' not in opt['name'] and opt['rank'] == 0:
             mkdir_and_rename(osp.join('tb_logger', opt['name']))
 
     # initialize loggers
