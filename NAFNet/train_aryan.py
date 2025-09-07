@@ -95,14 +95,8 @@ def create_train_val_dataloader(opt, logger):
             num_iter_per_epoch = len(train_set) // 2
             total_iters = int(opt['train']['total_iter'])
             total_epochs = 1
-            if logger is not None:
-                logger.info(
-                'Training statistics:'
-                f'\n\tNumber of train images: {len(train_set)}'
-                f'\n\tBatch size per gpu: 2'
-                f'\n\tWorld size (gpu number): {opt["world_size"]}'
-                f'\n\tRequire iter number per epoch: {num_iter_per_epoch}'
-                f'\n\tTotal epochs: {total_epochs}; iters: {total_iters}.')
+            
+            print(f'Training statistics:\n\tNumber of train images: {len(train_set)}\n\tBatch size per gpu: 2\n\tWorld size (gpu number): {opt["world_size"]}\n\tRequire iter number per epoch: {num_iter_per_epoch}\n\tTotal epochs: {total_epochs}; iters: {total_iters}.')
 
         elif phase == 'val':
             if opt["mosaic"]:
@@ -137,7 +131,7 @@ def main():
         print("\n[!] Loading pretrained model with strict=False")
         model.load_state_dict(ckpt, strict=False)
         
-    train_loader, val_loader, total_epochs, total_iters = create_train_val_dataloader(opt, logger=None)
+    train_loader, total_epochs, total_iters = create_train_val_dataloader(opt, logger=None)
 
     for epoch in range(total_epochs):
         current_iter = 0
@@ -153,7 +147,6 @@ def main():
             # training
             model.feed_data(lq, gt, is_val=False)
             result_code = model.optimize_parameters(current_iter)
-            iter_time = time.time() - iter_time
 
             # save models and training states
             if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
