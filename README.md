@@ -13,6 +13,9 @@ Was not finetuned.
 
 ### 2. Restormer
 
+> CUDA_VISIBLE_DEVICES=13 python3 train_aryan.py -opt Denoising/Options/FT_demosaic_real.yml
+> CUDA_VISIBLE_DEVICES=12 python3 train_aryan.py -opt Denoising/Options/FT_mosaic_real.yml
+
 ### 3. NAFNet
 
 > CUDA_VISIBLE_DEVICES=15 python3 train_aryan.py -opt options/train/FT_demosaic_width64.yml

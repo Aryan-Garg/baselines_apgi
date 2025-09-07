@@ -1,5 +1,5 @@
 # general settings
-name: RealDenoising_Restormer
+name: FT_mosaic
 model_type: ImageCleanModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
