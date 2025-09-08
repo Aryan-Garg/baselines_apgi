@@ -11,3 +11,4 @@
 *.tiff
 *.exr
 *.npy
+*.state
