@@ -15,8 +15,8 @@ Was not finetuned since it claims 'any' degradation fixing capabilities.
 
 ### 2. Restormer
 
-> CUDA_VISIBLE_DEVICES=13 python3 train_aryan.py -opt Denoising/Options/FT_demosaic_real.yml
-> CUDA_VISIBLE_DEVICES=12 python3 train_aryan.py -opt Denoising/Options/FT_mosaic_real.yml
+> CUDA_VISIBLE_DEVICES=12 python3 train_aryan.py -opt Denoising/Options/fixed_FT_demosaic_real.yml
+> CUDA_VISIBLE_DEVICES=13 python3 train_aryan.py -opt Denoising/Options/fixed_FT_mosaic_real.yml
 
 ```bibtex
 @inproceedings{Zamir2021Restormer,

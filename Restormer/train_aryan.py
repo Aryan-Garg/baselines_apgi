@@ -92,7 +92,7 @@ def create_train_val_dataloader(opt, logger):
                 raise NotImplementedError("Please specify either mosaic or demosaic option to be True.")
             train_loader = DataLoader(
                     dataset=train_set,
-                    batch_size=2,
+                    batch_size=dataset_opt['batch_size_per_gpu'],
                     num_workers=96,
                     shuffle=True,
                     drop_last=True,
@@ -115,7 +115,7 @@ def create_train_val_dataloader(opt, logger):
                 raise NotImplementedError("Please specify either mosaic or demosaic option to be True.")
             val_loader = DataLoader(
                     dataset=val_set,
-                    batch_size=2,
+                    batch_size=dataset_opt['batch_size_per_gpu'],
                     num_workers=96,
                     shuffle=False,
                     drop_last=True,
@@ -133,14 +133,14 @@ def main():
     train_loader, val_loader, total_epochs, total_iters = create_train_val_dataloader(opt, logger=None)
 
    
-    iters = opt['datasets']['train'].get('iters')
-    batch_size = 2
-    mini_batch_sizes = opt['datasets']['train'].get('mini_batch_sizes')
-    gt_size = opt['datasets']['train'].get('gt_size')
-    mini_gt_sizes = opt['datasets']['train'].get('gt_sizes')
+    # iters = opt['datasets']['train'].get('iters')
+    # batch_size = 2
+    # mini_batch_sizes = opt['datasets']['train'].get('mini_batch_sizes')
+    # gt_size = opt['datasets']['train'].get('gt_size')
+    # mini_gt_sizes = opt['datasets']['train'].get('gt_sizes')
 
-    groups = np.array([sum(iters[0:i + 1]) for i in range(0, len(iters))])
-    scale = opt['scale']
+    # groups = np.array([sum(iters[0:i + 1]) for i in range(0, len(iters))])
+    # scale = opt['scale']
 
     for epoch in range(total_epochs):
         current_iter = 0
@@ -157,27 +157,27 @@ def main():
 
             
             ### ------Progressive learning ---------------------
-            j = ((current_iter>groups) !=True).nonzero()[0]
-            if len(j) == 0:
-                bs_j = len(groups) - 1
-            else:
-                bs_j = j[0]
+            # j = ((current_iter>groups) !=True).nonzero()[0]
+            # if len(j) == 0:
+            #     bs_j = len(groups) - 1
+            # else:
+            #     bs_j = j[0]
 
-            mini_gt_size = mini_gt_sizes[bs_j]
-            mini_batch_size = mini_batch_sizes[bs_j]
+            # mini_gt_size = mini_gt_sizes[bs_j]
+            # mini_batch_size = mini_batch_sizes[bs_j]
             
-            if mini_batch_size < batch_size:
-                indices = random.sample(range(0, batch_size), k=mini_batch_size)
-                lq = lq[indices]
-                gt = gt[indices]
+            # if mini_batch_size < batch_size:
+            #     indices = random.sample(range(0, batch_size), k=mini_batch_size)
+            #     lq = lq[indices]
+            #     gt = gt[indices]
 
-            if mini_gt_size < gt_size:
-                x0 = int((gt_size - mini_gt_size) * random.random())
-                y0 = int((gt_size - mini_gt_size) * random.random())
-                x1 = x0 + mini_gt_size
-                y1 = y0 + mini_gt_size
-                lq = lq[:,:,x0:x1,y0:y1]
-                gt = gt[:,:,x0*scale:x1*scale,y0*scale:y1*scale]
+            # if mini_gt_size < gt_size:
+            #     x0 = int((gt_size - mini_gt_size) * random.random())
+            #     y0 = int((gt_size - mini_gt_size) * random.random())
+            #     x1 = x0 + mini_gt_size
+            #     y1 = y0 + mini_gt_size
+            #     lq = lq[:,:,x0:x1,y0:y1]
+            #     gt = gt[:,:,x0*scale:x1*scale,y0*scale:y1*scale]
             ###-------------------------------------------
 
             model.feed_train_data({'lq': lq, 'gt':gt})

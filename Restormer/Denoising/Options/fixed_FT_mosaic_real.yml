@@ -1,5 +1,5 @@
 # general settings
-name: FT_demosaic
+name: fixed_FT_mosaic
 model_type: ImageCleanModel
 scale: 1
 num_gpu: 1  # set num_gpu: 0 for cpu mode
@@ -9,25 +9,25 @@ manual_seed: 310
 datasets:
   train:
     name: gQVR
-    type: demosaic
+    type: mosaic
 
     # data loader
     use_shuffle: true
     num_worker_per_gpu: 96
-    batch_size_per_gpu: 2
+    batch_size_per_gpu: 1
 
     ### -------------Progressive training--------------------------
-    mini_batch_sizes: [8,5,4,2,1,1]             # Batch size per gpu   
-    iters: [92000,64000,48000,36000,36000,24000]
-    gt_size: 384   # Max patch size for progressive training
-    gt_sizes: [128,160,192,256,320,384]  # Patch sizes for progressive training.
+    # mini_batch_sizes: [8,5,4,2,1,1]             # Batch size per gpu   
+    # iters: [92000,64000,48000,36000,36000,24000]
+    # gt_size: 384   # Max patch size for progressive training
+    # gt_sizes: [128,160,192,256,320,384]  # Patch sizes for progressive training.
     ### ------------------------------------------------------------
 
     ### ------- Training on single fixed-patch size 128x128---------
-    # mini_batch_sizes: [8]   
-    # iters: [300000]
-    # gt_size: 128   
-    # gt_sizes: [128]
+    mini_batch_sizes: [8]   
+    iters: [300000]
+    gt_size: 384   
+    gt_sizes: [384]
     ### ------------------------------------------------------------
 
 
@@ -53,7 +53,7 @@ path:
 
 # training settings
 train:
-  total_iter: 3000000
+  total_iter: 300000
   warmup_iter: -1 # no warm up
   use_grad_clip: true
 
