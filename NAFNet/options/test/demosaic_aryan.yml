@@ -1,0 +1,33 @@
+# ------------------------------------------------------------------------
+# Copyright (c) 2022 megvii-model. All Rights Reserved.
+# ------------------------------------------------------------------------
+# Modified from BasicSR (https://github.com/xinntao/BasicSR)
+# Copyright 2018-2020 BasicSR Authors
+# ------------------------------------------------------------------------
+# general settings
+name: eval_demosaic_w64
+model_type: ImageRestorationModel
+scale: 1
+num_gpu: 1
+manual_seed: 310
+
+datasets:
+  val:
+    name: gQVR
+    simulation_type: demosaic
+
+path:
+  strict_load_g: true
+  pretrain_network_g: /media/agarg54/Extreme SSD/weights/nafnet/experiments/FT_demosaic_w64/models/net_g_300000.pth
+
+network_g:
+  type: NAFNet
+  width: 64
+  enc_blk_nums: [2, 2, 4, 8]
+  middle_blk_num: 12
+  dec_blk_nums: [2, 2, 2, 2]
+
+# validation settings
+val:
+  save_img: true
+  grids: false
