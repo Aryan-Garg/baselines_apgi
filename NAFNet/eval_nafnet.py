@@ -147,8 +147,7 @@ def compute_no_reference_metrics(out_img):
 
 
 def single_image_inference(model, img, save_path, gt=None, calcMetrics=True):
-    os.makedirs(save_path, exist_ok=True)
-
+    # print("Feeding...")
     model.feed_data(data={'lq': img.unsqueeze(dim=0)})
 
     if model.opt['val'].get('grids', False):
@@ -180,15 +179,15 @@ def main():
     avg_maniqa = 0
     avg_clipiqa = 0
     avg_musiq = 0
+    os.makedirs("./evaluation_full_ds", exist_ok=True)
+    # print("Len val loader:", len(val_loader))
     for batch in tqdm(val_loader):
         gt, lq, _, _ = batch
         gt = rearrange((gt+1)/2, "b h w c -> b c h w").contiguous().float()
         lq = rearrange((lq+1)/2, "b h w c -> b c h w").contiguous().float()
         current_iter += 1
-        if current_iter > total_iters:
-            break
-        
-        # training
+
+        # eval
         psnr, ssim, lpips, manIQA, clipIQA, musiq = single_image_inference(model, 
                                                                            lq, 
                                                                            f"./evaluation_full_ds/{str(current_iter).zfill(4)}.png", 
