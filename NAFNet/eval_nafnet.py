@@ -148,7 +148,7 @@ def compute_no_reference_metrics(out_img):
 
 def single_image_inference(model, img, save_path, gt=None, calcMetrics=True):
     # print("Feeding...")
-    model.feed_data(data={'lq': img.unsqueeze(dim=0)})
+    model.feed_data(lq=img, gt=gt, is_val=True)
 
     if model.opt['val'].get('grids', False):
         model.grids()
@@ -156,8 +156,15 @@ def single_image_inference(model, img, save_path, gt=None, calcMetrics=True):
     if model.opt['val'].get('grids', False):
         model.grids_inverse()
     visuals = model.get_current_visuals()
+    
+    input_img = tensor2img(img)
     sr_img = tensor2img([visuals['result']])
+    gt_img = tensor2img(gt)
+
     imwrite(sr_img, save_path)
+    imwrite(input_img, f"{save_path[:-4]}_input.png")
+    imwrite(gt_img, f"{save_path[:-4]}_gt.png")
+    
     psnr, ssim, lpips, manIQA, clipIQA, musiq = None, None, None, None, None, None
     if calcMetrics:
         psnr, ssim, lpips = compute_full_reference_metrics(gt, visuals['result'])
