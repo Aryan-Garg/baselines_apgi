@@ -12,3 +12,4 @@
 *.exr
 *.npy
 *.state
+__pycache__

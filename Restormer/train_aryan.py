@@ -33,7 +33,7 @@ import numpy as np
 def parse_options(is_train=True):
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        '-opt', type=str, required=True, help='Path to option YAML file.')
+        '--opt', type=str, required=True, help='Path to option YAML file.')
     parser.add_argument(
         '--launcher',
         choices=['none', 'pytorch', 'slurm'],
@@ -83,17 +83,17 @@ def create_train_val_dataloader(opt, logger):
     for phase, dataset_opt in opt['datasets'].items():
         if phase == 'train':
             if dataset_opt["type"] == "mosaic":
-                train_set = SPCDataset_Mosaic(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/combined_dataset.txt", 
-                                              out_size=384, crop_type="center", use_hflip=False, bits=3)
+                train_set = SPCDataset_Mosaic(file_list="/media/agarg54/Extreme SSD/dataset_files/combined_dataset.txt", 
+                                              out_size=256, crop_type="center", use_hflip=False, bits=3)
             elif dataset_opt["type"] == "demosaic":
-                train_set = SPCDataset(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/combined_dataset.txt", 
-                                              out_size=384, crop_type="center", use_hflip=False, bits=3)
+                train_set = SPCDataset(file_list="/media/agarg54/Extreme SSD/dataset_files/combined_dataset.txt", 
+                                              out_size=256, crop_type="center", use_hflip=False, bits=3)
             else:
                 raise NotImplementedError("Please specify either mosaic or demosaic option to be True.")
             train_loader = DataLoader(
                     dataset=train_set,
                     batch_size=dataset_opt['batch_size_per_gpu'],
-                    num_workers=96,
+                    num_workers=24,
                     shuffle=True,
                     drop_last=True,
             )
@@ -105,20 +105,20 @@ def create_train_val_dataloader(opt, logger):
             print(f'Training statistics:\n\tNumber of train images: {len(train_set)}\n\tBatch size per gpu: 2\n\tWorld size (gpu number): {opt["world_size"]}\n\tRequire iter number per epoch: {num_iter_per_epoch}\n\tTotal epochs: {total_epochs} OR iters: {total_iters}.')
 
         elif phase == 'val':
-            if opt["type"] == "mosaic":
-                val_set = SPCDataset_Mosaic(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/random_val.txt", 
+            if dataset_opt["type"] == "mosaic":
+                val_set = SPCDataset_Mosaic(file_list="/media/agarg54/Extreme SSD/dataset_txt_files/full_test_set.txt", 
                                               out_size=256, crop_type="center", use_hflip=False, bits=3)
-            elif opt["type"] == "demosaic":
-                val_set = SPCDataset(file_list="/mnt/disks/behemoth/datasets/dataset_txt_files/random_val.txt", 
+            elif dataset_opt["type"] == "demosaic":
+                val_set = SPCDataset(file_list="/media/agarg54/Extreme SSD/dataset_txt_files/full_test_set.txt", 
                                               out_size=256, crop_type="center", use_hflip=False, bits=3)
             else:
                 raise NotImplementedError("Please specify either mosaic or demosaic option to be True.")
             val_loader = DataLoader(
                     dataset=val_set,
                     batch_size=dataset_opt['batch_size_per_gpu'],
-                    num_workers=96,
+                    num_workers=24,
                     shuffle=False,
-                    drop_last=True,
+                    drop_last=False,
             )
         else:
             raise ValueError(f'Dataset phase {phase} is not recognized.')
@@ -155,47 +155,34 @@ def main():
             model.update_learning_rate(
                 current_iter, warmup_iter=opt['train'].get('warmup_iter', -1))
 
-            
-            ### ------Progressive learning ---------------------
-            # j = ((current_iter>groups) !=True).nonzero()[0]
-            # if len(j) == 0:
-            #     bs_j = len(groups) - 1
-            # else:
-            #     bs_j = j[0]
-
-            # mini_gt_size = mini_gt_sizes[bs_j]
-            # mini_batch_size = mini_batch_sizes[bs_j]
-            
-            # if mini_batch_size < batch_size:
-            #     indices = random.sample(range(0, batch_size), k=mini_batch_size)
-            #     lq = lq[indices]
-            #     gt = gt[indices]
-
-            # if mini_gt_size < gt_size:
-            #     x0 = int((gt_size - mini_gt_size) * random.random())
-            #     y0 = int((gt_size - mini_gt_size) * random.random())
-            #     x1 = x0 + mini_gt_size
-            #     y1 = y0 + mini_gt_size
-            #     lq = lq[:,:,x0:x1,y0:y1]
-            #     gt = gt[:,:,x0*scale:x1*scale,y0*scale:y1*scale]
-            ###-------------------------------------------
-
             model.feed_train_data({'lq': lq, 'gt':gt})
             model.optimize_parameters(current_iter)
 
             # save models and training states
-            if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
+            if current_iter % opt['logger']['save_checkpoint_freq'] == 0 or current_iter == 1:
                 print('Saving models and training states.')
                 model.save(epoch, current_iter)
+                for idx, batch in tqdm(enumerate(val_loader)):
+                    gt, lq, _, _ = batch
+                    gt = rearrange((gt+1)/2, "b h w c -> b c h w").contiguous().float()
+                    lq = rearrange((lq+1)/2, "b h w c -> b c h w").contiguous().float()
+                    model.feed_data({'lq': lq, 'gt':gt})
+                    model.nonpad_test()
+                    output_dict = model.get_current_visuals()
+                    plt.imsave(f"./experiments/val_{opt['datasets']['val']['type']}/gt_{str(idx).zfill(4)}.png", rearrange(output_dict['gt'][0, ...], "c h w -> h w c").numpy())
+                    plt.imsave(f"./experiments/val_{opt['datasets']['val']['type']}/lq_{str(idx).zfill(4)}.png", rearrange(output_dict['lq'][0, ...], "c h w -> h w c").numpy())
+                    res = rearrange(output_dict['result'][0, ...], "c h w -> h w c")
+                    res = (res - res.min()) / (res.max() - res.min())
+                    plt.imsave(f"./experiments/val_{opt['datasets']['val']['type']}/out_{str(idx).zfill(4)}.png", res.numpy())
 
-            if current_iter % opt['logger']['save_img'] == 1:
-                output_dict = model.get_current_visuals()
-                os.makedirs("./experiments/temp", exist_ok=True)
-                plt.imsave("./experiments/temp/gt.png", rearrange(output_dict['gt'][0, ...], "c h w -> h w c").numpy())
-                plt.imsave("./experiments/temp/lq.png", rearrange(output_dict['lq'][0, ...], "c h w -> h w c").numpy())
-                res = rearrange(output_dict['result'][0, ...], "c h w -> h w c")
-                res = (res - res.min()) / (res.max() - res.min())
-                plt.imsave("./experiments/temp/result.png", res.numpy())
+            # if current_iter % opt['logger']['save_img'] == 1:
+            #     output_dict = model.get_current_visuals()
+            #     os.makedirs("./experiments/temp", exist_ok=True)
+            #     plt.imsave("./experiments/temp/gt.png", rearrange(output_dict['gt'][0, ...], "c h w -> h w c").numpy())
+            #     plt.imsave("./experiments/temp/lq.png", rearrange(output_dict['lq'][0, ...], "c h w -> h w c").numpy())
+            #     res = rearrange(output_dict['result'][0, ...], "c h w -> h w c")
+            #     res = (res - res.min()) / (res.max() - res.min())
+            #     plt.imsave("./experiments/temp/result.png", res.numpy())
             
             if current_iter > total_iters:
                 break

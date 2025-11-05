@@ -147,7 +147,6 @@ def compute_no_reference_metrics(out_img):
 
 
 def single_image_inference(model, img, save_path, gt=None, calcMetrics=True):
-    # print("Feeding...")
     model.feed_data(lq=img, gt=gt, is_val=True)
 
     if model.opt['val'].get('grids', False):
@@ -157,18 +156,28 @@ def single_image_inference(model, img, save_path, gt=None, calcMetrics=True):
         model.grids_inverse()
     visuals = model.get_current_visuals()
     
-    input_img = tensor2img(img)
-    sr_img = tensor2img([visuals['result']])
-    gt_img = tensor2img(gt)
+    if "demosaic" in save_path:
+        # print(img.size())
+        input_img = img[:,[0],:,:].repeat(1,3,1,1)
+        sr_img = visuals['result'][:,[0],:,:].clamp(0,1).repeat(1,3,1,1)
+        gt_img = gt[:,[0],:,:].repeat(1,3,1,1)
+    else:
+        input_img = img
+        sr_img = visuals['result'].clamp(0,1)
+        gt_img = gt
+
+    input_img = tensor2img(input_img)
+    sr_img = tensor2img(sr_img)
+    gt_img = tensor2img(gt_img)
 
     imwrite(sr_img, save_path)
     imwrite(input_img, f"{save_path[:-4]}_input.png")
     imwrite(gt_img, f"{save_path[:-4]}_gt.png")
-    
+
     psnr, ssim, lpips, manIQA, clipIQA, musiq = None, None, None, None, None, None
     if calcMetrics:
-        psnr, ssim, lpips = compute_full_reference_metrics(gt, visuals['result'])
-        manIQA, clipIQA, musiq = compute_no_reference_metrics(visuals['result'])
+        psnr, ssim, lpips = compute_full_reference_metrics(gt, visuals['result'].clamp(0,1))
+        manIQA, clipIQA, musiq = compute_no_reference_metrics(visuals['result'].clamp(0,1))
 
     return psnr, ssim, lpips, manIQA, clipIQA, musiq
 
@@ -186,7 +195,7 @@ def main():
     avg_maniqa = 0
     avg_clipiqa = 0
     avg_musiq = 0
-    os.makedirs("./evaluation_full_ds", exist_ok=True)
+    os.makedirs(f"./evaluation_full_ds_{opt['datasets']['val']['simulation_type']}", exist_ok=True)
     # print("Len val loader:", len(val_loader))
     for batch in tqdm(val_loader):
         gt, lq, _, _ = batch
@@ -197,7 +206,7 @@ def main():
         # eval
         psnr, ssim, lpips, manIQA, clipIQA, musiq = single_image_inference(model, 
                                                                            lq, 
-                                                                           f"./evaluation_full_ds/{str(current_iter).zfill(4)}.png", 
+                                                                           f"./evaluation_full_ds_{opt['datasets']['val']['simulation_type']}/{str(current_iter).zfill(4)}.png", 
                                                                            gt=gt,
                                                                            calcMetrics=True)
 

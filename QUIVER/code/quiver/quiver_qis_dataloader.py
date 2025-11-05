@@ -149,14 +149,15 @@ class test_dataloader(Dataset):
         vid = cv2.VideoCapture(self.video_path)
         return int(vid.get(cv2.CAP_PROP_FRAME_COUNT)) - self.args.num_frames + 1
         
+        
 class spadtest_dataloader(Dataset):
     def __init__(self, args, video_path):
         super(spadtest_dataloader, self).__init__()
-        self.video_path = video_path
+        self.file_list = video_path
         self.args = args
 
     def __getitem__(self, idx):
-        qis_seq = qis_utils.frames_extraction(self.video_path, self.args.num_frames, start_frame=idx, downsample=self.args.downsample)
+        qis_seq = qis_utils.open_image(self.video_path, self.args.num_frames, start_frame=idx, downsample=self.args.downsample)
         
         qis_seq = qis_seq[:, None, :, :]
 

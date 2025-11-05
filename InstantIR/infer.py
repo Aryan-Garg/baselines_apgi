@@ -372,14 +372,14 @@ if __name__ == "__main__":
     parser.add_argument(
         "--test_path",
         type=str,
-        default=None,
+        default="/media/agarg54/Extreme SSD/dataset_txt_files/full_test_set.txt",
         required=True,
-        help="Test directory.",
+        help="Test ds_file.",
     )
     parser.add_argument(
         "--out_path",
         type=str,
-        default="./output",
+        default="/nobackup1/aryan/results/InstantIR/",
         help="Output directory.",
     )
     parser.add_argument("--seed", type=int, default=42, help="A seed for reproducible training.")
