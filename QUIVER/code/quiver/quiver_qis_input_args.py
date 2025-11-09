@@ -42,8 +42,9 @@ def quiver_training_args(parser):
 
 
 def quiver_testing_args(parser):
-    parser.add_argument('--testgtdata_dir', type=str, default='/nobackup3/aryan/apgi/datasets/QUIVER/i2-2kfps_v1/test', 
-                        help='clean val videoframes directory')
+    parser.add_argument('--testgtdata_dir', type=str, 
+                        default='/media/agarg54/Extreme SSD/code/baselines_apgi/QUIVER/code/quiver/burst_gt_videos_remaining/', 
+                        help='clean gt video directory')
     parser.add_argument('--plotdir', type=str, default='./plotdir', help='...')
     parser.add_argument('--folder_name', type=str, default='./results', help='folder name')
     parser.add_argument('--gray_mode', type=bool, default=True, help='image transforms')
@@ -63,20 +64,21 @@ def quiver_testing_args(parser):
 
     # testing
     parser.add_argument('--spynet_path', type=str, default="")
-    parser.add_argument('--load_spynet_weights', type=bool, default=False)
+    parser.add_argument('--load_spynet_weights', type=bool, default=True)
     parser.add_argument('--model_name', type=str, default='quiver', help='model name')
     parser.add_argument('-batch_size', type=int, default=1, help='....')
-    parser.add_argument('--weights_path', type=str, default='', help='weights master directory')
-    parser.add_argument('--save_path', type=str, default='./results', help='...')
+    parser.add_argument('--weights_path', type=str, default="/media/agarg54/Extreme SSD/code/baselines_apgi/QUIVER/code/quiver/weights/quiver_best_p5f5_3.25PPP.pth", 
+                        help='weights master directory')
+    parser.add_argument('--save_path', type=str, default='/nobackup1/aryan/results/QUIVER/', help='...')
     parser.add_argument('--visualize', type=bool, default=False, help='visualization during validation')
 
 
 def sensor_args(parser):
-    parser.add_argument('-FWC', type=int, default=200, help='....')
-    parser.add_argument('-avg_PPP', type=float, default=3.25, help='....')
-    parser.add_argument('-gain', type=float, default=0.5 * (7/3.25), help='....')
-    parser.add_argument('-Nbits', type=int, default=3, help='....')
-    parser.add_argument('-QE', type=float, default=0.8, help='....')
-    parser.add_argument('-theta_dark', type=float, default=1.6, help='....')
-    parser.add_argument('-sigma_read', type=float, default=0.2, help='....')
-    parser.add_argument('-clicks_per_frame', type=int, default=1, help='....')
+    parser.add_argument('--FWC', type=int, default=200, help='....')
+    parser.add_argument('--avg_PPP', type=float, default=3.25, help='....')
+    parser.add_argument('--gain', type=float, default=0.5 * (7/3.25), help='....')
+    parser.add_argument('--Nbits', type=int, default=3, help='....')
+    parser.add_argument('--QE', type=float, default=0.8, help='....')
+    parser.add_argument('--theta_dark', type=float, default=1.6, help='....')
+    parser.add_argument('--sigma_read', type=float, default=0., help='....')
+    parser.add_argument('--clicks_per_frame', type=int, default=1, help='....')

@@ -21,7 +21,7 @@ def main(args):
     os.makedirs(args.plotdir, exist_ok=True)
     os.makedirs(args.save_path, exist_ok=True)
     
-    args.device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     gpu_count = torch.cuda.device_count()
     print('gpu count:', gpu_count)
     print("selected: ", args.device)
@@ -42,24 +42,46 @@ def main(args):
 
     model.eval()
 
-    #video_paths
-    video_paths = glob.glob(os.path.join(args.testgtdata_dir, '*.mp4'))
-    print("video paths:", video_paths)
-    for v in range(len(video_paths)):
-        args.folder_name = video_paths[v].split('/')[-1]
-        args.folder_name = args.folder_name.split('.')[0]
-        testset = quiver_qis_dataloader.test_dataloader(args, video_paths[v])
-        t_dataloader = DataLoader(dataset=testset, num_workers=5, batch_size=1, shuffle=False)
-        psnr = test(args, t_dataloader, model)
+    testset = quiver_qis_dataloader.spadtest_dataloader(args, 
+                                                        file_list_path="/media/agarg54/Extreme SSD/dataset_txt_files/full_test_set.txt", 
+                                                        bits=3)
+    t_dataloader = DataLoader(dataset=testset, num_workers=16, batch_size=1, shuffle=False)
+    psnr = test(args, t_dataloader, model)
     return 0
+
+import piq
+from tqdm import tqdm
+import pyiqa
+
+# from DeQAScore.src import Scorer
+MODELmaniqa = pyiqa.create_metric('maniqa', device=torch.device("cuda"))
+MODELclipiqa = pyiqa.create_metric('clipiqa', device=torch.device("cuda"))
+MODELmusiq = pyiqa.create_metric('musiq', device=torch.device("cuda"))
+def compute_no_reference_metrics(out_img):
+    _, _, h, w = out_img.shape
+    top = (h - 224) // 2
+    left = (w - 224) // 2
+    out_img = out_img[:, :, top:top+224, left:left+224]
+
+    # ManIQA DeQA MUSIQ ClipIQA
+    maniqa_score = MODELmaniqa(out_img).item()
+    clipiqa_score = MODELclipiqa(out_img).item()
+    musiq_score = MODELmusiq(out_img).item()
+
+    return maniqa_score, clipiqa_score, musiq_score #, deqa_score
 
 
 def test(args, dataloader, model):
     psnr = 0
     ssim = 0
+    lpips = 0
+    maniq = 0
+    clipiq = 0
+    musiq = 0
     count = 0
     fidx = (args.past_frames + args.future_frames + 1) // 2
     with torch.no_grad():
+        pbar = tqdm(total=len(dataloader))
         for batch, data in enumerate(dataloader):
             qis_seq, gt_seq = data
             qis_seq = (qis_seq.to(torch.float32)).to(args.device)
@@ -71,10 +93,21 @@ def test(args, dataloader, model):
             
             count = count + (out_seq.shape[0] * out_seq.shape[1])
             
-            psnr += qis_utils.batch_psnr(out_seq.clamp(0.0, 1.0), gt_seq.clamp(0.0, 1.0), qis_seq.clamp(0.0, 1.0), data_range=1.0, plotdir=args.plotdir, iteration=batch, visualize=args.visualize)
-            
+            psnr += qis_utils.batch_psnr(out_seq.clamp(0.0, 1.0), gt_seq.clamp(0.0, 1.0), qis_seq.clamp(0.0, 1.0), data_range=1.0, plotdir=args.plotdir, iteration=batch, visualize=args.visualize)            
             ssim += qis_utils.batch_ssim(out_seq.clamp(0.0, 1.0), gt_seq.clamp(0.0, 1.0), data_range=1)
-            
+            lololo = out_seq.size(0)
+            for sdofi in range(lololo):
+                lpips += piq.LPIPS(reduction='none')(out_seq[sdofi, ...].clamp(0.0, 1.0), gt_seq[sdofi, ...].clamp(0.0, 1.0)).item()
+                # print(out_seq[sdofi, ...].repeat(1,3,1,1).size())
+                thisMan, thisCLIP, thisMUSIQ = compute_no_reference_metrics(out_seq[sdofi, ...].clamp(0.0, 1.0).repeat(1,3,1,1))
+                maniq += thisMan
+                clipiq += thisCLIP
+                thisMUSIQ += thisMUSIQ
+            lpips /= lololo
+            maniq /= lololo
+            clipiq /= lololo
+            musiq /= lololo
+
             file_name = '%05d'% (batch + fidx)
             if not os.path.exists(os.path.join(args.save_path, args.folder_name + '_gt')):
                 os.makedirs(os.path.join(args.save_path, args.folder_name + '_gt'))
@@ -102,9 +135,17 @@ def test(args, dataloader, model):
             del out_seq
             del qis_seq
             del gt_seq
+            pbar.update(1)
 
-    # print('psnr: %.2f' % (psnr/count))
-    # print('ssim: %.4f' % (ssim/count))
+    print('psnr: %.3f' % (psnr/count))
+    print('ssim: %.4f' % (ssim/count))
+    print('lpips: %.4f' % (lpips/count))
+
+    print('--------------------------------')
+    print('ManIQA: %.3f' % (maniq/count))
+    print('CLIP-IQA: %.4f' % (clipiq/count))
+    print('MUSIQ: %.4f' % (musiq/count))
+
     return psnr/count
 
 

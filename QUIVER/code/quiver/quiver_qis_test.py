@@ -21,7 +21,7 @@ def main(args):
     os.makedirs(args.plotdir, exist_ok=True)
     os.makedirs(args.save_path, exist_ok=True)
     
-    args.device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+    args.device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     gpu_count = torch.cuda.device_count()
     print('gpu count:', gpu_count)
     print("selected: ", args.device)
@@ -51,6 +51,7 @@ def main(args):
         testset = quiver_qis_dataloader.test_dataloader(args, video_paths[v])
         t_dataloader = DataLoader(dataset=testset, num_workers=5, batch_size=1, shuffle=False)
         psnr = test(args, t_dataloader, model)
+        print(f"Video: {args.folder_name}, PSNR: {psnr:.4f} dB")
     return 0
 
 

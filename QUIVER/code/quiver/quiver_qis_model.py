@@ -93,7 +93,7 @@ class SpyNet(nn.Module):
         return_levels (list[int]): return flows of different levels. Default: [5].
     """
 
-    def __init__(self, load_path=None, load_spynet_weights=False, return_levels=[3]):
+    def __init__(self, load_path=None, load_spynet_weights=True, return_levels=[3]):
         super(SpyNet, self).__init__()
         self.return_levels = return_levels
         self.basic_module = nn.ModuleList([BasicModule() for _ in range(4)])
@@ -537,7 +537,7 @@ class QUIVER(nn.Module):
         self.ds_ratio = 4
         self.predenoise = predenoise(para)
         self.spynet = SpyNet(para.spynet_path, para.load_spynet_weights, [1, 2, 3])
-        self.device = torch.device('cuda:1')
+        self.device = torch.device('cuda')
         self.extractor = FeatureExtractor(para)
         self.preden_extractor = FeatureExtractor(para)
         #changes made here -- Nov 3rd

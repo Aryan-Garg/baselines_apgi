@@ -237,7 +237,7 @@ def batch_ssim(img, imclean, data_range=1.0):
     for b in range(img.shape[0]):
         for i in range(img.shape[1]):
             ssim_val += SSIM(imclean[b, i, 0, :, :].detach().cpu().numpy(), img[b, i, 0, :, :].detach().cpu().numpy(), data_range=data_range)
-    print('ssim: ', ssim_val/(img.shape[0]*img.shape[1])) 
+    # print('ssim: ', ssim_val/(img.shape[0]*img.shape[1])) 
     return ssim_val   
 
 
@@ -324,7 +324,7 @@ def batch_psnr(img, imclean, inp, data_range, plotdir, iteration, visualize = Fa
             fig.savefig(os.path.join(plotdir, str(iteration) + '_%05d.png' % b))
             plt.close()
     
-    print(psnr/(img.shape[0]*img.shape[1]))
+    # print(psnr/(img.shape[0]*img.shape[1]))
     return psnr/(img.shape[0]*img.shape[1])
 
 

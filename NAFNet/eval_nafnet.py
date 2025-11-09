@@ -128,6 +128,9 @@ def compute_full_reference_metrics(gt_img, out_img):
 
 import pyiqa
 # from DeQAScore.src import Scorer
+MODELmaniqa = pyiqa.create_metric('maniqa', device=torch.device("cuda"))
+MODELclipiqa = pyiqa.create_metric('clipiqa', device=torch.device("cuda"))
+MODELmusiq = pyiqa.create_metric('musiq', device=torch.device("cuda"))
 def compute_no_reference_metrics(out_img):
     _, _, h, w = out_img.shape
     top = (h - 224) // 2
@@ -135,13 +138,9 @@ def compute_no_reference_metrics(out_img):
     out_img = out_img[:, :, top:top+224, left:left+224]
 
     # ManIQA DeQA MUSIQ ClipIQA
-    maniqa = pyiqa.create_metric('maniqa', device=torch.device("cuda:1"))
-    clipiqa = pyiqa.create_metric('clipiqa', device=torch.device("cuda:1"))
-    musiq = pyiqa.create_metric('musiq', device=torch.device("cuda:1"))
-
-    maniqa_score = maniqa(out_img).item()
-    clipiqa_score = clipiqa(out_img).item()
-    musiq_score = musiq(out_img).item()
+    maniqa_score = MODELmaniqa(out_img).item()
+    clipiqa_score = MODELclipiqa(out_img).item()
+    musiq_score = MODELmusiq(out_img).item()
 
     return maniqa_score, clipiqa_score, musiq_score #, deqa_score
 
